@@ -17,11 +17,8 @@ A lightweight, modern screen recorder for **Wayland** that captures your screen 
 
 Built in Rust. No Electron. No GNOME Shell dependency. Just `ffmpeg` and a portal.
 
-<p align="center">
-  <video autoplay loop muted playsinline width="720">
-    <source src="assets/demo.webm" type="video/webm" />
-  </video>
-</p>
+https://github.com/user-attachments/assets/b2499d5a-7e04-4c0b-b849-a13956feb2d8
+
 
 ## Features
 
