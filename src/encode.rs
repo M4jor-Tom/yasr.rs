@@ -59,9 +59,13 @@ pub fn build_args(
     codec: &str,
     bitrate: Option<&str>,
     output: &str,
+    verbose: bool,
 ) -> Vec<String> {
-    let mut args = vec![
-        "-y".into(),
+    let mut args = vec!["-y".into()];
+    if !verbose {
+        args.extend_from_slice(&["-loglevel".into(), "warning".into()]);
+    }
+    args.extend_from_slice(&[
         "-f".into(),
         "rawvideo".into(),
         "-pix_fmt".into(),
@@ -72,7 +76,7 @@ pub fn build_args(
         fps.to_string(),
         "-i".into(),
         "-".into(),
-    ];
+    ]);
 
     match codec {
         c if c.ends_with("_vaapi") => {

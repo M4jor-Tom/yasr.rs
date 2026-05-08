@@ -36,6 +36,9 @@ struct Args {
 
     #[arg(long)]
     list_codecs: bool,
+
+    #[arg(short, long, help = "Show verbose ffmpeg output")]
+    verbose: bool,
 }
 
 fn main() -> Result<()> {
@@ -98,6 +101,7 @@ fn main() -> Result<()> {
         &codec,
         args.bitrate.as_deref(),
         &args.output,
+        args.verbose,
     );
     eprintln!("+ ffmpeg {}", ffmpeg_args.join(" "));
 
