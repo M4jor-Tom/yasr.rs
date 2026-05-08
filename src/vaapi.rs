@@ -3,7 +3,9 @@ use std::path::Path;
 pub fn device_path() -> String {
     for i in 128..=129 {
         let p = format!("/dev/dri/renderD{i}");
-        if Path::new(&p).exists() { return p; }
+        if Path::new(&p).exists() {
+            return p;
+        }
     }
     "/dev/dri/renderD128".into()
 }

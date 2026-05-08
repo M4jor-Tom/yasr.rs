@@ -1,8 +1,4 @@
-mod capture;
-mod encode;
-mod vaapi;
-
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -10,6 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use xcap::Monitor;
+use yasr::{capture, encode, vaapi};
 
 #[derive(Parser)]
 #[command(version, about = "Yet Another Screen Recorder")]
@@ -20,7 +17,12 @@ struct Args {
     #[arg(short, long, help = "Monitor index (0-based)")]
     monitor: Option<usize>,
 
-    #[arg(short, long, default_value = "auto", help = "Target FPS, or 'auto' to detect")]
+    #[arg(
+        short,
+        long,
+        default_value = "auto",
+        help = "Target FPS, or 'auto' to detect"
+    )]
     fps: String,
 
     #[arg(long, help = "Video codec (auto-detected by default)")]
@@ -38,8 +40,9 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let monitors = Monitor::all()
-        .context("Failed to enumerate monitors. On Wayland, make sure xdg-desktop-portal is running.")?;
+    let monitors = Monitor::all().context(
+        "Failed to enumerate monitors. On Wayland, make sure xdg-desktop-portal is running.",
+    )?;
 
     if args.list_monitors {
         return capture::list_monitors(&monitors);
@@ -57,7 +60,8 @@ fn main() -> Result<()> {
     }
 
     let idx = args.monitor.unwrap_or(0);
-    let mon = monitors.get(idx)
+    let mon = monitors
+        .get(idx)
         .with_context(|| format!("Monitor {idx} not found ({} available)", monitors.len()))?;
 
     let width = mon.width()?;
@@ -66,7 +70,10 @@ fn main() -> Result<()> {
 
     println!("Monitor: {name} ({width}x{height})");
 
-    let codec = args.codec.clone().unwrap_or_else(|| encode::pick_best(&available));
+    let codec = args
+        .codec
+        .clone()
+        .unwrap_or_else(|| encode::pick_best(&available));
     println!("Encoder: {codec}");
 
     let target_fps = if args.fps == "auto" {
@@ -75,14 +82,23 @@ fn main() -> Result<()> {
         println!("Capture: {cap_fps:.1} fps max → using {fps} fps");
         fps
     } else {
-        args.fps.parse::<u32>().context("--fps must be a number or 'auto'")?
+        args.fps
+            .parse::<u32>()
+            .context("--fps must be a number or 'auto'")?
     };
 
     if codec.ends_with("_vaapi") {
         vaapi::setup_env();
     }
 
-    let ffmpeg_args = encode::build_args(width, height, target_fps, &codec, args.bitrate.as_deref(), &args.output);
+    let ffmpeg_args = encode::build_args(
+        width,
+        height,
+        target_fps,
+        &codec,
+        args.bitrate.as_deref(),
+        &args.output,
+    );
     eprintln!("+ ffmpeg {}", ffmpeg_args.join(" "));
 
     let mut child = Command::new("ffmpeg")
@@ -128,7 +144,10 @@ fn main() -> Result<()> {
 
     let elapsed = start.elapsed().as_secs_f64();
     let actual_fps = frames as f64 / elapsed;
-    println!("Done: {frames} frames in {elapsed:.1}s ({actual_fps:.1} fps) → {}", args.output);
+    println!(
+        "Done: {frames} frames in {elapsed:.1}s ({actual_fps:.1} fps) → {}",
+        args.output
+    );
 
     if !status.success() {
         eprintln!("ffmpeg exited with: {status}");

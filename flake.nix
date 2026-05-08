@@ -61,9 +61,11 @@
           craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
             postInstall = ''
-              wrapProgram $out/bin/yasr \
-                --prefix PATH : "${pkgs.ffmpeg}/bin" \
-                --set LIBVA_DRIVERS_PATH "${pkgs.intel-media-driver}/lib/dri"
+              for bin in yasr-cli yasr-tui; do
+                wrapProgram $out/bin/$bin \
+                  --prefix PATH : "${pkgs.ffmpeg}/bin" \
+                  --set LIBVA_DRIVERS_PATH "${pkgs.intel-media-driver}/lib/dri"
+              done
             '';
           });
       }
