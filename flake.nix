@@ -1,5 +1,5 @@
 {
-  description = "yasr — yet another screen recorder";
+  description = "yasr - yet another screen recorder";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -49,7 +49,7 @@
           '';
         };
 
-        packages.default =
+        packages =
           let
             craneLib = crane.mkLib pkgs;
             commonArgs = {
@@ -57,17 +57,23 @@
               inherit nativeBuildInputs buildInputs;
             };
             cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+            yasr = craneLib.buildPackage (commonArgs // {
+              inherit cargoArtifacts;
+              meta.mainProgram = "yasr-cli";
+              postInstall = ''
+                for bin in yasr-cli yasr-tui; do
+                  wrapProgram $out/bin/$bin \
+                    --prefix PATH : "${pkgs.ffmpeg}/bin" \
+                    --set LIBVA_DRIVERS_PATH "${pkgs.intel-media-driver}/lib/dri"
+                done
+              '';
+            });
           in
-          craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            postInstall = ''
-              for bin in yasr-cli yasr-tui; do
-                wrapProgram $out/bin/$bin \
-                  --prefix PATH : "${pkgs.ffmpeg}/bin" \
-                  --set LIBVA_DRIVERS_PATH "${pkgs.intel-media-driver}/lib/dri"
-              done
-            '';
-          });
+          rec {
+            default = yasr // { meta = (yasr.meta or { }) // { mainProgram = "yasr-cli"; }; };
+            yasr-cli = yasr // { meta = (yasr.meta or { }) // { mainProgram = "yasr-cli"; }; };
+            yasr-tui = yasr // { meta = (yasr.meta or { }) // { mainProgram = "yasr-tui"; }; };
+          };
       }
     );
 }
